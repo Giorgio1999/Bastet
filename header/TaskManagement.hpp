@@ -17,6 +17,6 @@ public:
 
 void BackgroundWorker(TaskQueue &queue, uci::UciHandler &uciHandler);
 
-void ForegroundWorker(TaskQueue &queue);
+void ForegroundWorker(TaskQueue &queue, uci::UciHandler &uciHandler);
 } // namespace taskManagement
 

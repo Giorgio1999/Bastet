@@ -1,9 +1,7 @@
 #include "TaskManagement.hpp"
 #include "UciHandler.hpp"
-#include <atomic>
 #include <iostream>
 using namespace taskManagement;
-std::atomic<bool> running = true;
 
 void TaskQueue::push(std::string task) {
   std::lock_guard<std::mutex> lock(mutex);
@@ -21,7 +19,7 @@ std::string TaskQueue::pop() {
 
 void taskManagement::BackgroundWorker(TaskQueue &queue,
                                       uci::UciHandler &uciHandler) {
-  while (running) {
+  while (true) {
     std::string task = queue.pop();
     try {
       uciHandler.Listen(task);
@@ -30,13 +28,17 @@ void taskManagement::BackgroundWorker(TaskQueue &queue,
   }
 }
 
-void taskManagement::ForegroundWorker(TaskQueue &queue) {
+void taskManagement::ForegroundWorker(TaskQueue &queue,
+                                      uci ::UciHandler &uciHandler) {
   std::string command;
-  while (running) {
+  while (true) {
     if (std::getline(std::cin, command)) {
       queue.push(command);
       if (command == "quit") {
         std::exit(0);
+      }
+      if (command == "stop") {
+        uciHandler.Listen(command);
       }
     }
   }

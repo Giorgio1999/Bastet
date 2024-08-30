@@ -1,28 +1,11 @@
 #include "UciHandler.hpp"
 #include "Engine.hpp"
-#include <functional>
-#include <regex>
-#include <string>
-#include <unordered_map>
 using namespace uci;
 
-UciHandler::UciHandler() {
-  commands["uci"] = &chess::Engine::Uci;
-  commands["donothing"] = &chess::Engine::DoNothing;
+UciHandler::UciHandler(chess::Engine &_engine) {
+  engine = _engine;
+  commands["uci"] = chess::Engine::Uci;
 }
 UciHandler::~UciHandler() {}
 
-std::function<void(chess::Engine &,
-                   std::regex_iterator<std::string::iterator> &)>
-UciHandler::Listen(std::string command) {
-  if (command == "quit") {
-    throw 1;
-  }
-  if (command == "stop") {
-    throw 2;
-  }
-  if (commands.find(command) == commands.end()) {
-    throw 0;
-  }
-  return commands[command];
-}
+void UciHandler::Listen(std::string command) {}
