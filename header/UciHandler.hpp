@@ -15,6 +15,7 @@ public:
   UciHandler(chess::Engine &_engine);
   ~UciHandler();
   void Listen(std::string command);
+  void StopEngine();
 };
 
 } // namespace uci

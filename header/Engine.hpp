@@ -11,8 +11,8 @@ struct Configuration {
 
 class Engine {
 public:
-  bool stop = false;
   Configuration configuration;
+  bool stop = false;
 
   Engine();
   ~Engine();

@@ -5,11 +5,12 @@
 
 int main() {
   chess::Engine engine;
-  uci::UciHandler uciHandler;
+  uci::UciHandler uciHandler(engine);
   taskManagement::TaskQueue queue;
   std::thread bgThread(taskManagement::BackgroundWorker, std::ref(queue),
-                       std::ref(engine));
-  std::thread fgThread(taskManagement::ForegroundWorker, std::ref(queue));
+                       std::ref(uciHandler));
+  std::thread fgThread(taskManagement::ForegroundWorker, std::ref(queue),
+                       std::ref(uciHandler));
 
   bgThread.join();
   fgThread.join();

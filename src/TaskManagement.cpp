@@ -24,6 +24,12 @@ void taskManagement::BackgroundWorker(TaskQueue &queue,
     try {
       uciHandler.Listen(task);
     } catch (int e) {
+      if (e == 1) {
+        std::cout << "Unknown command" << std::endl;
+      }
+      if (e == 0) {
+        std::exit(0);
+      }
     }
   }
 }
@@ -33,12 +39,13 @@ void taskManagement::ForegroundWorker(TaskQueue &queue,
   std::string command;
   while (true) {
     if (std::getline(std::cin, command)) {
-      queue.push(command);
-      if (command == "quit") {
-        std::exit(0);
-      }
       if (command == "stop") {
-        uciHandler.Listen(command);
+        uciHandler.StopEngine();
+      } else {
+        queue.push(command);
+        if (command == "quit") {
+          std::exit(0);
+        }
       }
     }
   }
