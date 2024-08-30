@@ -1,4 +1,5 @@
 #pragma once
+#include <regex>
 #include <string>
 
 namespace chess {
@@ -16,10 +17,10 @@ public:
   Engine();
   ~Engine();
 
-  void Uci();
-  void Stop();
-  void UnStop();
-  void DoNothing();
+  void Uci(std::regex_iterator<std::string::iterator> &command);
+  void Stop(std::regex_iterator<std::string::iterator> &command);
+  void UnStop(std::regex_iterator<std::string::iterator> &command);
+  void DoNothing(std::regex_iterator<std::string::iterator> &command);
 };
 
 } // namespace chess
