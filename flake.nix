@@ -12,17 +12,26 @@
           pkgs = import nixpkgs {
             inherit system;
           };
+          chessPackages = chess.packages.x86_64-linux.default;
         in 
+        {
+          devShells.default = pkgs.mkShell {
+            nativeBuildInputs = [
+              chessPackages
+              pkgs.gcc
+              pkgs.cmake
+            ];
+            buildInputs = [
+            ];
 
-        devShells.default = pkgs.mkShell {
-          nativeBuildInputs = [
-            chess
-          ];
-          buildInputs = [
-          ];
+            CHESS_ROOT = "${chessPackages}";
 
-          shellHook = ''
-            chess shell
-          '';
-        };
+            shellHook = ''
+              echo chess shell with
+              ${chessPackages}/bin/example_program
+              exec zsh
+            '';
+          };
+        }
+      );
 }
