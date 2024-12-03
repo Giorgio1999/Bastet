@@ -3,13 +3,22 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(bastet VERSION 1.0.0)
 
-add_executable(bastet src/bastet.cpp)
-target_include_directories(bastet PUBLIC ${CHESS_ROOT}/include)
+set(SUFFIX
+    ""
+    CACHE STRING "")
+if(SUFFIX)
+  set(TARGET_NAME "${PROJECT_NAME}-${PROJECT_VERSION}-${SUFFIX}")
+else()
+  set(TARGET_NAME "${PROJECT_NAME}-${PROJECT_VERSION}")
+endif()
+
+add_executable(${TARGET_NAME} src/bastet.cpp)
+target_include_directories(${TARGET_NAME} PUBLIC ${CHESS_ROOT}/include)
 find_library(
   CHESS_LIB
   NAMES chess
   PATHS ${CHESS_ROOT}/lib)
-target_link_libraries(bastet PUBLIC ${CHESS_LIB})
+target_link_libraries(${TARGET_NAME} PUBLIC ${CHESS_LIB})
 
 execute_process(
   COMMAND
