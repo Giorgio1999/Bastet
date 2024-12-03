@@ -75,7 +75,7 @@ Evaluate (chess::engine::Engine &engine)
 }
 
 int
-NegaMax (chess::engine::Engine &engine, int depth, SearchData &searchData)
+NegaMax (chess::engine::Engine &engine, int depth, int alpha, int beta, SearchData &searchData)
 {
     if (depth == 0)
         {
@@ -92,8 +92,13 @@ NegaMax (chess::engine::Engine &engine, int depth, SearchData &searchData)
     for (const chess::consts::move &move : legalMoves)
         {
             engine.MakeMove (move);
-            evaluation = std::max (evaluation, -NegaMax (engine, depth - 1, searchData));
+            evaluation = std::max (evaluation, -NegaMax (engine, depth - 1, -beta, -alpha, searchData));
             engine.UndoMove ();
+            alpha = std::max (alpha, evaluation);
+            if (alpha >= beta)
+                {
+                    break;
+                }
         }
     return evaluation;
 }
@@ -109,7 +114,7 @@ Search (chess::engine::Engine &engine)
     for (const chess::consts::move &move : legalMoves)
         {
             engine.MakeMove (move);
-            scores.push_back (-NegaMax (engine, maxDepth, searchData));
+            scores.push_back (-NegaMax (engine, maxDepth, -INT_MAX, INT_MAX, searchData));
             engine.UndoMove ();
         }
     auto bestMoveIndex = std::distance (scores.begin (), std::max_element (scores.begin (), scores.end ()));
