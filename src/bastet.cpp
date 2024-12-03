@@ -107,7 +107,7 @@ std::string
 Search (chess::engine::Engine &engine)
 {
     SearchData searchData;
-    int maxDepth = 2;
+    int maxDepth = 4;
 
     std::vector<chess::consts::move> legalMoves = engine.GetLegalMoves ();
     std::vector<int> scores;
