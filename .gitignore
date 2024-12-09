@@ -5,3 +5,6 @@ obj/
 obj/*
 test_suits
 tournaments
+.cache
+.cache/*
+.cache/clangd/index/bastet.cpp.8AD9286639C526FB.idx

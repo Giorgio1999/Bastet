@@ -1,6 +1,7 @@
 #include <iostream>
 #include <chess.hpp>
 #include <climits>
+#include <numeric>
 
 class SearchData
 {
@@ -10,6 +11,7 @@ class SearchData
     int score = 0;
     int depth = 0;
     std::string bestmove = "";
+    int allottedTime = 0;
 
   public:
     void
@@ -41,6 +43,16 @@ class SearchData
     SetBestmove (const chess::consts::move &_bestmove)
     {
         bestmove = chess::moves::move2string (_bestmove);
+    }
+    void
+    SetAlottedTime (const int &_alottedTime)
+    {
+        allottedTime = _alottedTime;
+    }
+    int
+    GetAlottedTime ()
+    {
+        return allottedTime;
     }
     void
     Print ()
@@ -103,27 +115,62 @@ NegaMax (chess::engine::Engine &engine, int depth, int alpha, int beta, SearchDa
     return evaluation;
 }
 
+struct child
+{
+    chess::consts::move move;
+    int score;
+};
+
 std::string
 Search (chess::engine::Engine &engine)
 {
     SearchData searchData;
     int maxDepth = 4;
+    int timeAlotment = 50;
 
     std::vector<chess::consts::move> legalMoves = engine.GetLegalMoves ();
-    std::vector<int> scores;
+    std::vector<child> children;
     for (const chess::consts::move &move : legalMoves)
         {
-            engine.MakeMove (move);
-            scores.push_back (-NegaMax (engine, maxDepth, -INT_MAX, INT_MAX, searchData));
-            engine.UndoMove ();
+            child child;
+            child.move = move;
+            child.score = 0;
+            children.push_back (child);
         }
-    auto bestMoveIndex = std::distance (scores.begin (), std::max_element (scores.begin (), scores.end ()));
+    /*for (int localDepth = 1; localDepth <= maxDepth; localDepth++)*/
+    int localDepth = 1;
+    int allottedTime = 0;
+    if (engine.GetBoard ().white_to_play ())
+        {
+            allottedTime = engine.GetTimer ().GetWtime ();
+        }
+    else
+        {
+            allottedTime = engine.GetTimer ().GetBtime ();
+        }
+    allottedTime /= timeAlotment;
+    searchData.SetAlottedTime (allottedTime);
+    while (localDepth <= maxDepth)
+        {
+            for (child &child : children)
+                {
+                    engine.MakeMove (child.move);
+                    child.score = -NegaMax (engine, localDepth, -INT_MAX, INT_MAX, searchData);
+                    engine.UndoMove ();
+                    if (engine.GetTimer ().GetTimeElapsed () > allottedTime)
+                        {
+                            return searchData.Bestmove ();
+                        }
+                }
+            std::sort (children.begin (), children.end (), [] (child A, child B) { return A.score > B.score; });
 
-    searchData.SetDepth (maxDepth);
-    searchData.SetBestmove (legalMoves[bestMoveIndex]);
-    searchData.SetTimeElapsed (engine.GetTimer ().GetTimeElapsed ());
-    searchData.SetScore (scores[bestMoveIndex]);
-    searchData.Print ();
+            searchData.SetDepth (localDepth);
+            searchData.SetBestmove (children[0].move);
+            searchData.SetTimeElapsed (engine.GetTimer ().GetTimeElapsed ());
+            searchData.SetScore (children[0].score);
+            searchData.Print ();
+            localDepth++;
+        }
 
     return searchData.Bestmove ();
 }
