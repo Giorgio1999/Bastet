@@ -95,8 +95,18 @@ NegaMax (chess::engine::Engine &engine, int depth, int alpha, int beta, SearchDa
             return Evaluate (engine);
         }
     std::vector<chess::consts::move> legalMoves = engine.GetLegalMoves ();
-    bool whiteToPlay = engine.GetBoard ().white_to_play ();
-    if (legalMoves.size () == 0 && engine.IsStalemate ())
+    if (legalMoves.size () == 0)
+        {
+            if (engine.IsStalemate ())
+                {
+                    return 0;
+                }
+            if (engine.IsMate ())
+                {
+                    return -INT_MAX;
+                }
+        }
+    if (engine.IsRepetition ())
         {
             return 0;
         }

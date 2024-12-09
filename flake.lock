@@ -6,11 +6,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1733272703,
-        "narHash": "sha256-eASXs6nCfbLBeXxLNt3v+End7xCdoobsCLzythf9HkM=",
+        "lastModified": 1733772172,
+        "narHash": "sha256-Ier32vr2j5vgoruJCc7qWU5xaRj2bcyuoIR5C14sJoc=",
         "owner": "Giorgio1999",
         "repo": "chess",
-        "rev": "f45fc065d7c5e21fd7296e2aea7a4ccb735630f2",
+        "rev": "ac0d0a7eead5f51299194aac37f22d7a92bbc44e",
         "type": "github"
       },
       "original": {
@@ -73,11 +73,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1733220138,
-        "narHash": "sha256-Yh5XZ9yVurrcYdNTSWxYgW4+EJ0pcOqgM1043z9JaRc=",
+        "lastModified": 1733384649,
+        "narHash": "sha256-K5DJ2LpPqht7K76bsxetI+YHhGGRyVteTPRQaIIKJpw=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "bcb68885668cccec12276bbb379f8f2557aa06ce",
+        "rev": "190c31a89e5eec80dd6604d7f9e5af3802a58a13",
         "type": "github"
       },
       "original": {
