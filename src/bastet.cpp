@@ -12,8 +12,14 @@ class SearchData
     int depth = 0;
     std::string bestmove = "";
     int allottedTime = 0;
+    std::chrono::time_point<std::chrono::steady_clock> start;
 
   public:
+    void
+    StartClock ()
+    {
+        start = std::chrono::steady_clock::now ();
+    }
     void
     SetNodes (const uint64_t &_nodes)
     {
@@ -28,6 +34,12 @@ class SearchData
     SetTimeElapsed (const int &_timeElapsed)
     {
         timeElapsed = _timeElapsed;
+    }
+    int
+    GetTimeElapsed ()
+    {
+        auto now = std::chrono::steady_clock::now ();
+        return std::chrono::duration_cast<std::chrono::milliseconds> (now - start).count ();
     }
     void
     SetScore (const int &_score)
@@ -67,7 +79,11 @@ class SearchData
     void
     Print ()
     {
-        std::cout << "info depth " << depth << " score cp " << score << " nodes " << nodes << " nps " << nodes / (timeElapsed == 0 ? 1 : timeElapsed) * 1000 << std::endl;
+        /*std::cout << "info depth " << depth << " score cp " << score << " nodes " << nodes << " nps " << nodes / (timeElapsed == 0 ? 1 : timeElapsed) * 1000 << std::endl;*/
+        std::cout << "info depth " << depth;
+        std::cout << " score cp " << score;
+        std::cout << " nodes " << nodes;
+        std::cout << " nps " << nodes / (GetTimeElapsed () == 0 ? 1 : GetTimeElapsed ()) * 1000 << std::endl;
     }
     std::string
     Bestmove ()
@@ -116,7 +132,8 @@ Quiescence (chess::engine::Engine &engine, int alpha, int beta, SearchData &sear
             engine.MakeMove (move);
             evaluation = std::max (evaluation, -Quiescence (engine, -beta, -alpha, searchData));
             engine.UndoMove ();
-            if (engine.GetTimer ().GetTimeElapsed () > searchData.GetAlottedTime ())
+            /*if (engine.GetTimer ().GetTimeElapsed () > searchData.GetAlottedTime ())*/
+            if (searchData.GetTimeElapsed () > searchData.GetAlottedTime ())
                 {
                     /*return searchData.Bestmove ();*/
                     break;
@@ -161,7 +178,8 @@ NegaMax (chess::engine::Engine &engine, int depth, int alpha, int beta, SearchDa
             engine.MakeMove (move);
             evaluation = std::max (evaluation, -NegaMax (engine, depth - 1, -beta, -alpha, searchData));
             engine.UndoMove ();
-            if (engine.GetTimer ().GetTimeElapsed () > searchData.GetAlottedTime ())
+            /*if (engine.GetTimer ().GetTimeElapsed () > searchData.GetAlottedTime ())*/
+            if (searchData.GetTimeElapsed () > searchData.GetAlottedTime ())
                 {
                     /*return searchData.Bestmove ();*/
                     break;
@@ -185,6 +203,7 @@ std::string
 Search (chess::engine::Engine &engine)
 {
     SearchData searchData;
+    searchData.StartClock ();
     int maxDepth = 4;
     int timeAlotment = 50;
 
@@ -203,11 +222,11 @@ Search (chess::engine::Engine &engine)
     int allottedTime = 0;
     if (engine.GetBoard ().white_to_play ())
         {
-            allottedTime = engine.GetTimer ().GetWtime ();
+            allottedTime = engine.GetTimer ().GetWtime () + engine.GetTimer ().GetWinc ();
         }
     else
         {
-            allottedTime = engine.GetTimer ().GetBtime ();
+            allottedTime = engine.GetTimer ().GetBtime () + engine.GetTimer ().GetBinc ();
         }
     allottedTime /= timeAlotment;
     searchData.SetAlottedTime (allottedTime);
@@ -219,7 +238,8 @@ Search (chess::engine::Engine &engine)
                     engine.MakeMove (child.move);
                     child.score = -NegaMax (engine, localDepth, -INT_MAX, INT_MAX, searchData);
                     engine.UndoMove ();
-                    if (engine.GetTimer ().GetTimeElapsed () > searchData.GetAlottedTime ())
+                    /*if (engine.GetTimer ().GetTimeElapsed () > searchData.GetAlottedTime ())*/
+                    if (searchData.GetTimeElapsed () > searchData.GetAlottedTime ())
                         {
                             return searchData.Bestmove ();
                             /*break;*/
@@ -228,7 +248,6 @@ Search (chess::engine::Engine &engine)
             std::sort (children.begin (), children.end (), [] (child A, child B) { return A.score > B.score; });
 
             searchData.SetBestmove (children[0].move);
-            searchData.SetTimeElapsed (engine.GetTimer ().GetTimeElapsed ());
             searchData.SetScore (children[0].score);
             searchData.Print ();
             localDepth++;
