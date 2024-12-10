@@ -40,6 +40,16 @@ class SearchData
         depth = _depth;
     }
     void
+    AddDepth ()
+    {
+        depth++;
+    }
+    void
+    SubtractDepth ()
+    {
+        depth--;
+    }
+    void
     SetBestmove (const chess::consts::move &_bestmove)
     {
         bestmove = chess::moves::move2string (_bestmove);
@@ -87,12 +97,47 @@ Evaluate (chess::engine::Engine &engine)
 }
 
 int
+Quiescence (chess::engine::Engine &engine, int alpha, int beta, SearchData &searchData)
+{
+    int standPat = Evaluate (engine);
+    if (standPat >= beta)
+        {
+            searchData.AddNodes ();
+            return standPat;
+        }
+    if (alpha < standPat)
+        {
+            alpha = standPat;
+        }
+    std::vector<chess::consts::move> legalCaptures = engine.GetLegalCaptures ();
+    int evaluation = alpha;
+    for (const chess::consts::move &move : legalCaptures)
+        {
+            engine.MakeMove (move);
+            evaluation = std::max (evaluation, -Quiescence (engine, -beta, -alpha, searchData));
+            engine.UndoMove ();
+            if (engine.GetTimer ().GetTimeElapsed () > searchData.GetAlottedTime ())
+                {
+                    /*return searchData.Bestmove ();*/
+                    break;
+                }
+            alpha = std::max (alpha, evaluation);
+            if (alpha >= beta)
+                {
+                    break;
+                }
+        }
+    return evaluation;
+}
+
+int
 NegaMax (chess::engine::Engine &engine, int depth, int alpha, int beta, SearchData &searchData)
 {
     if (depth == 0)
         {
-            searchData.AddNodes ();
-            return Evaluate (engine);
+            /*searchData.AddNodes ();*/
+            /*return Evaluate (engine);*/
+            return Quiescence (engine, alpha, beta, searchData);
         }
     std::vector<chess::consts::move> legalMoves = engine.GetLegalMoves ();
     if (legalMoves.size () == 0)
@@ -116,6 +161,11 @@ NegaMax (chess::engine::Engine &engine, int depth, int alpha, int beta, SearchDa
             engine.MakeMove (move);
             evaluation = std::max (evaluation, -NegaMax (engine, depth - 1, -beta, -alpha, searchData));
             engine.UndoMove ();
+            if (engine.GetTimer ().GetTimeElapsed () > searchData.GetAlottedTime ())
+                {
+                    /*return searchData.Bestmove ();*/
+                    break;
+                }
             alpha = std::max (alpha, evaluation);
             if (alpha >= beta)
                 {
@@ -147,6 +197,7 @@ Search (chess::engine::Engine &engine)
             child.score = 0;
             children.push_back (child);
         }
+    searchData.SetBestmove (children[0].move);
     /*for (int localDepth = 1; localDepth <= maxDepth; localDepth++)*/
     int localDepth = 1;
     int allottedTime = 0;
@@ -162,19 +213,20 @@ Search (chess::engine::Engine &engine)
     searchData.SetAlottedTime (allottedTime);
     while (localDepth <= maxDepth)
         {
+            searchData.SetDepth (localDepth);
             for (child &child : children)
                 {
                     engine.MakeMove (child.move);
                     child.score = -NegaMax (engine, localDepth, -INT_MAX, INT_MAX, searchData);
                     engine.UndoMove ();
-                    if (engine.GetTimer ().GetTimeElapsed () > allottedTime)
+                    if (engine.GetTimer ().GetTimeElapsed () > searchData.GetAlottedTime ())
                         {
                             return searchData.Bestmove ();
+                            /*break;*/
                         }
                 }
             std::sort (children.begin (), children.end (), [] (child A, child B) { return A.score > B.score; });
 
-            searchData.SetDepth (localDepth);
             searchData.SetBestmove (children[0].move);
             searchData.SetTimeElapsed (engine.GetTimer ().GetTimeElapsed ());
             searchData.SetScore (children[0].score);
