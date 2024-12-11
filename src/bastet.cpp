@@ -1,6 +1,7 @@
 #include <iostream>
 #include <chess.hpp>
 #include <climits>
+#include <cmath>
 #include <numeric>
 
 class SearchData
@@ -101,6 +102,9 @@ Evaluate (chess::engine::Engine &engine)
     int scoreMultiplier = whiteToPlay ? 1 : -1;
     int evaluation = 0;
     std::array<int, 6> material = { 100, 300, 300, 500, 900 };
+    int mobilityBonus = 10;
+    chess::consts::bitboard whiteAttacks = engine.GetAttacks (true);
+    chess::consts::bitboard blackAttacks = engine.GetAttacks (false);
     for (uint i = 0; i < 6; i++)
         {
             evaluation += scoreMultiplier * material[i] * chess::bitboard_helper::count (pieceBoards[i]);
@@ -109,6 +113,8 @@ Evaluate (chess::engine::Engine &engine)
         {
             evaluation -= scoreMultiplier * material[i] * chess::bitboard_helper::count (pieceBoards[i + 6]);
         }
+    evaluation += scoreMultiplier * mobilityBonus * chess::bitboard_helper::count (whiteAttacks);
+    evaluation -= scoreMultiplier * mobilityBonus * chess::bitboard_helper::count (blackAttacks);
     return evaluation;
 }
 
