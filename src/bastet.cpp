@@ -4,6 +4,9 @@
 #include <cmath>
 #include <numeric>
 
+extern std::array<std::array<int, 64>, 10> psts;
+extern std::array<std::array<int, 64>, 4> king_psts;
+
 class SearchData
 {
   private:
@@ -101,20 +104,39 @@ Evaluate (chess::engine::Engine &engine)
     std::array<chess::consts::bitboard, 12> pieceBoards = board.get_piece_boards ();
     int scoreMultiplier = whiteToPlay ? 1 : -1;
     int evaluation = 0;
-    std::array<int, 6> material = { 100, 300, 300, 500, 900 };
+    std::array<int, 5> material = { 100, 300, 300, 500, 900 };
     int mobilityBonus = 10;
+    int endgameMaterialCutoff = 16 * material[0] + 4 * material[1] + 4 * material[2] + 2 * material[3];
     chess::consts::bitboard whiteAttacks = engine.GetAttacks (true);
     chess::consts::bitboard blackAttacks = engine.GetAttacks (false);
-    for (uint i = 0; i < 6; i++)
+    int totalMaterialRemaining = 0;
+    for (uint i = 0; i < 5; i++)
         {
-            evaluation += scoreMultiplier * material[i] * chess::bitboard_helper::count (pieceBoards[i]);
+            int material_count = material[i] * chess::bitboard_helper::count (pieceBoards[i]);
+            evaluation += scoreMultiplier * material_count;
+            totalMaterialRemaining += material_count;
+            while (pieceBoards[i] > 0)
+                {
+                    int square = chess::bitboard_helper::pop_lsb (pieceBoards[i]);
+                    evaluation += scoreMultiplier * psts[i][square];
+                }
         }
-    for (uint i = 0; i < 6; i++)
+    for (uint i = 0; i < 5; i++)
         {
-            evaluation -= scoreMultiplier * material[i] * chess::bitboard_helper::count (pieceBoards[i + 6]);
+            int material_count = material[i] * chess::bitboard_helper::count (pieceBoards[i + 6]);
+            evaluation -= scoreMultiplier * material_count;
+            totalMaterialRemaining += material_count;
+            while (pieceBoards[i + 6] > 0)
+                {
+                    int square = chess::bitboard_helper::pop_lsb (pieceBoards[i + 6]);
+                    evaluation -= scoreMultiplier * psts[i + 5][square];
+                }
         }
+    evaluation += scoreMultiplier * (totalMaterialRemaining < endgameMaterialCutoff ? king_psts[2][chess::bitboard_helper::pop_lsb (pieceBoards[5])] : king_psts[0][chess::bitboard_helper::pop_lsb (pieceBoards[6])]);
+    evaluation -= scoreMultiplier * (totalMaterialRemaining < endgameMaterialCutoff ? king_psts[3][chess::bitboard_helper::pop_lsb (pieceBoards[11])] : king_psts[1][chess::bitboard_helper::pop_lsb (pieceBoards[11])]);
     evaluation += scoreMultiplier * mobilityBonus * chess::bitboard_helper::count (whiteAttacks);
     evaluation -= scoreMultiplier * mobilityBonus * chess::bitboard_helper::count (blackAttacks);
+
     return evaluation;
 }
 
@@ -272,3 +294,171 @@ main ()
     engine.SetSearch (Search);
     chess::engine::Handler handler (engine, std::cin, std::cout);
 }
+
+std::array<std::array<int, 64>, 10> psts = {
+    // alls pstss for middle game pieces
+    // https://www.chessprogramming.org/Simplified_Evaluation_Function
+    std::array<int, 64>{
+        // white pawn
+        0,  0,  0,   0,   0,   0,   0,  0,  //
+        50, 50, 50,  50,  50,  50,  50, 50, //
+        10, 10, 20,  30,  30,  20,  10, 10, //
+        5,  5,  10,  25,  25,  10,  5,  5,  //
+        0,  0,  0,   20,  20,  0,   0,  0,  //
+        5,  -5, -10, 0,   0,   -10, -5, 5,  //
+        5,  10, 10,  -20, -20, 10,  10, 5,  //
+        0,  0,  0,   0,   0,   0,   0,  0   //
+    },
+    std::array<int, 64>{
+        // white knight
+        -50, -40, -30, -30, -30, -30, -40, -50, //
+        -40, -20, 0,   0,   0,   0,   -20, -40, //
+        -30, 0,   10,  15,  15,  10,  0,   -30, //
+        -30, 5,   15,  20,  20,  15,  5,   -30, //
+        -30, 0,   15,  20,  20,  15,  0,   -30, //
+        -30, 5,   10,  15,  15,  10,  5,   -30, //
+        -40, -20, 0,   5,   5,   0,   -20, -40, //
+        -50, -40, -30, -30, -30, -30, -40, -50, //
+    },
+    std::array<int, 64>{
+        // white bishop
+        -20, -10, -10, -10, -10, -10, -10, -20, //
+        -10, 0,   0,   0,   0,   0,   0,   -10, //
+        -10, 0,   5,   10,  10,  5,   0,   -10, //
+        -10, 5,   5,   10,  10,  5,   5,   -10, //
+        -10, 0,   10,  10,  10,  10,  0,   -10, //
+        -10, 10,  10,  10,  10,  10,  10,  -10, //
+        -10, 5,   0,   0,   0,   0,   5,   -10, //
+        -20, -10, -10, -10, -10, -10, -10, -20, //
+    },
+    std::array<int, 64>{
+        // white rook
+        0,  0,  0,  0,  0,  0,  0,  0,  //
+        5,  10, 10, 10, 10, 10, 10, 5,  //
+        -5, 0,  0,  0,  0,  0,  0,  -5, //
+        -5, 0,  0,  0,  0,  0,  0,  -5, //
+        -5, 0,  0,  0,  0,  0,  0,  -5, //
+        -5, 0,  0,  0,  0,  0,  0,  -5, //
+        -5, 0,  0,  0,  0,  0,  0,  -5, //
+        0,  0,  0,  5,  5,  0,  0,  0   //
+    },
+    std::array<int, 64>{
+        // white Queen
+        -20, -10, -10, -5, -5, -10, -10, -20, //
+        -10, 0,   0,   0,  0,  0,   0,   -10, //
+        -10, 0,   5,   5,  5,  5,   0,   -10, //
+        -5,  0,   5,   5,  5,  5,   0,   -5,  //
+        0,   0,   5,   5,  5,  5,   0,   -5,  //
+        -10, 5,   5,   5,  5,  5,   0,   -10, //
+        -10, 0,   5,   0,  0,  0,   0,   -10, //
+        -20, -10, -10, -5, -5, -10, -10, -20  //
+    },
+    std::array<int, 64>{
+        // black pawn
+
+        0,  0,  0,   0,   0,   0,   0,  0,  //
+        5,  10, 10,  -20, -20, 10,  10, 5,  //
+        5,  -5, -10, 0,   0,   -10, -5, 5,  //
+        0,  0,  0,   20,  20,  0,   0,  0,  //
+        5,  5,  10,  25,  25,  10,  5,  5,  //
+        10, 10, 20,  30,  30,  20,  10, 10, //
+        50, 50, 50,  50,  50,  50,  50, 50, //
+        0,  0,  0,   0,   0,   0,   0,  0   //
+    },
+    std::array<int, 64>{
+        // black knight
+        -50, -40, -30, -30, -30, -30, -40, -50, //
+        -40, -20, 0,   5,   5,   0,   -20, -40, //
+        -30, 5,   10,  15,  15,  10,  5,   -30, //
+        -30, 0,   15,  20,  20,  15,  0,   -30, //
+        -30, 5,   15,  20,  20,  15,  5,   -30, //
+        -30, 0,   10,  15,  15,  10,  0,   -30, //
+        -40, -20, 0,   0,   0,   0,   -20, -40, //
+        -50, -40, -30, -30, -30, -30, -40, -50, //
+
+    },
+    std::array<int, 64>{
+        // black bishop
+        -20, -10, -10, -10, -10, -10, -10, -20, //
+        -10, 5,   0,   0,   0,   0,   5,   -10, //
+        -10, 10,  10,  10,  10,  10,  10,  -10, //
+        -10, 0,   10,  10,  10,  10,  0,   -10, //
+        -10, 5,   5,   10,  10,  5,   5,   -10, //
+        -10, 0,   5,   10,  10,  5,   0,   -10, //
+        -10, 0,   0,   0,   0,   0,   0,   -10, //
+        -20, -10, -10, -10, -10, -10, -10, -20, //
+
+    },
+    std::array<int, 64>{
+        // black rook
+        0,  0,  0,  5,  5,  0,  0,  0,  //
+        -5, 0,  0,  0,  0,  0,  0,  -5, //
+        -5, 0,  0,  0,  0,  0,  0,  -5, //
+        -5, 0,  0,  0,  0,  0,  0,  -5, //
+        -5, 0,  0,  0,  0,  0,  0,  -5, //
+        -5, 0,  0,  0,  0,  0,  0,  -5, //
+        5,  10, 10, 10, 10, 10, 10, 5,  //
+        0,  0,  0,  0,  0,  0,  0,  0,  //
+
+    },
+    std::array<int, 64>{
+        // black Queen
+        -20, -10, -10, -5, -5, -10, -10, -20, //
+        -10, 0,   5,   0,  0,  0,   0,   -10, //
+        -10, 5,   5,   5,  5,  5,   0,   -10, //
+        0,   0,   5,   5,  5,  5,   0,   -5,  //
+        -5,  0,   5,   5,  5,  5,   0,   -5,  //
+        -10, 0,   5,   5,  5,  5,   0,   -10, //
+        -10, 0,   0,   0,  0,  0,   0,   -10, //
+        -20, -10, -10, -5, -5, -10, -10, -20  //
+    },
+};
+
+std::array<std::array<int, 64>, 4> king_psts = {
+    // all kings pstss white-mg,black-mg,white-eg,black-eg
+    // https://www.chessprogramming.org/Simplified_Evaluation_Function
+    std::array<int, 64>{
+        // white-mg
+        -30, -40, -40, -50, -50, -40, -40, -30, //
+        -30, -40, -40, -50, -50, -40, -40, -30, //
+        -30, -40, -40, -50, -50, -40, -40, -30, //
+        -30, -40, -40, -50, -50, -40, -40, -30, //
+        -20, -30, -30, -40, -40, -30, -30, -20, //
+        -10, -20, -20, -20, -20, -20, -20, -10, //
+        20,  20,  0,   0,   0,   0,   20,  20,  //
+        20,  30,  10,  0,   0,   10,  30,  20   //
+    },
+    std::array<int, 64>{
+        // black-mg
+        20,  30,  10,  0,   0,   10,  30,  20,  //
+        20,  20,  0,   0,   0,   0,   20,  20,  //
+        -10, -20, -20, -20, -20, -20, -20, -10, //
+        -20, -30, -30, -40, -40, -30, -30, -20, //
+        -30, -40, -40, -50, -50, -40, -40, -30, //
+        -30, -40, -40, -50, -50, -40, -40, -30, //
+        -30, -40, -40, -50, -50, -40, -40, -30, //
+        -30, -40, -40, -50, -50, -40, -40, -30, //
+    },
+    std::array<int, 64>{
+        // white-eg
+        -50, -40, -30, -20, -20, -30, -40, -50, //
+        -30, -20, -10, 0,   0,   -10, -20, -30, //
+        -30, -10, 20,  30,  30,  20,  -10, -30, //
+        -30, -10, 30,  40,  40,  30,  -10, -30, //
+        -30, -10, 30,  40,  40,  30,  -10, -30, //
+        -30, -10, 20,  30,  30,  20,  -10, -30, //
+        -30, -30, 0,   0,   0,   0,   -30, -30, //
+        -50, -30, -30, -30, -30, -30, -30, -50  //
+    },
+    std::array<int, 64>{
+        // black-eg
+        -50, -30, -30, -30, -30, -30, -30, -50, //
+        -30, -30, 0,   0,   0,   0,   -30, -30, //
+        -30, -10, 20,  30,  30,  20,  -10, -30, //
+        -30, -10, 30,  40,  40,  30,  -10, -30, //
+        -30, -10, 30,  40,  40,  30,  -10, -30, //
+        -30, -10, 20,  30,  30,  20,  -10, -30, //
+        -30, -20, -10, 0,   0,   -10, -20, -30, //
+        -50, -40, -30, -20, -20, -30, -40, -50, //
+    },
+};
