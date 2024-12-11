@@ -210,8 +210,8 @@ Search (chess::engine::Engine &engine)
 {
     SearchData searchData;
     searchData.StartClock ();
-    int maxDepth = 4;
-    int timeAlotment = 50;
+    int maxDepth = 20;
+    int timeAlotment = 30;
 
     std::vector<chess::consts::move> legalMoves = engine.GetLegalMoves ();
     std::vector<child> children;
