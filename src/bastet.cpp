@@ -96,6 +96,7 @@ class SearchData
     }
 };
 
+const float SQRT2 = std::sqrt (2);
 int
 Evaluate (chess::engine::Engine &engine)
 {
@@ -107,14 +108,17 @@ Evaluate (chess::engine::Engine &engine)
     std::array<int, 5> material = { 100, 300, 300, 500, 900 };
     int mobilityBonus = 10;
     int endgameMaterialCutoff = 16 * material[0] + 4 * material[1] + 4 * material[2] + 2 * material[3];
+    int mopUpMaterialCutoff = 1 * material[3] - 10;
+    int mopUpBonus = 10;
     chess::consts::bitboard whiteAttacks = engine.GetAttacks (true);
     chess::consts::bitboard blackAttacks = engine.GetAttacks (false);
-    int totalMaterialRemaining = 0;
+    int whiteMaterialRemaining = 0;
+    int blackMaterialRemaining = 0;
     for (uint i = 0; i < 5; i++)
         {
             int material_count = material[i] * chess::bitboard_helper::count (pieceBoards[i]);
             evaluation += scoreMultiplier * material_count;
-            totalMaterialRemaining += material_count;
+            whiteMaterialRemaining += material_count;
             while (pieceBoards[i] > 0)
                 {
                     int square = chess::bitboard_helper::pop_lsb (pieceBoards[i]);
@@ -125,18 +129,43 @@ Evaluate (chess::engine::Engine &engine)
         {
             int material_count = material[i] * chess::bitboard_helper::count (pieceBoards[i + 6]);
             evaluation -= scoreMultiplier * material_count;
-            totalMaterialRemaining += material_count;
+            blackMaterialRemaining += material_count;
             while (pieceBoards[i + 6] > 0)
                 {
                     int square = chess::bitboard_helper::pop_lsb (pieceBoards[i + 6]);
                     evaluation -= scoreMultiplier * psts[i + 5][square];
                 }
         }
-    evaluation += scoreMultiplier * (totalMaterialRemaining < endgameMaterialCutoff ? king_psts[2][chess::bitboard_helper::pop_lsb (pieceBoards[5])] : king_psts[0][chess::bitboard_helper::pop_lsb (pieceBoards[6])]);
-    evaluation -= scoreMultiplier * (totalMaterialRemaining < endgameMaterialCutoff ? king_psts[3][chess::bitboard_helper::pop_lsb (pieceBoards[11])] : king_psts[1][chess::bitboard_helper::pop_lsb (pieceBoards[11])]);
+    int whiteKingSquare = chess::bitboard_helper::pop_lsb (pieceBoards[5]);
+    int blackKingSquare = chess::bitboard_helper::pop_lsb (pieceBoards[11]);
+    int totalMaterialRemaining = whiteMaterialRemaining + blackMaterialRemaining;
+    int materialAdvantage = std::abs (whiteMaterialRemaining - blackMaterialRemaining);
+    evaluation += scoreMultiplier * (totalMaterialRemaining < endgameMaterialCutoff ? king_psts[2][whiteKingSquare] : king_psts[0][whiteKingSquare]);
+    evaluation -= scoreMultiplier * (totalMaterialRemaining < endgameMaterialCutoff ? king_psts[3][blackKingSquare] : king_psts[1][blackKingSquare]);
+    /*if (materialAdvantage >= mopUpMaterialCutoff)*/
+    /*    {*/
+    /*        int wk_file = whiteKingSquare & 7;*/
+    /*        int wk_rank = whiteKingSquare >> 3;*/
+    /*        int bk_file = blackKingSquare & 7;*/
+    /*        int bk_rank = blackKingSquare >> 3;*/
+    /*        int distance = 0;*/
+    /*        if (whiteToPlay)*/
+    /*            {*/
+    /*                int dfile = std::min (std::abs (bk_file - 0), std::abs (bk_file - 7));*/
+    /*                int drank = std::min (std::abs (bk_rank - 0), std::abs (bk_rank - 7));*/
+    /*                distance = SQRT2 * std::min (dfile, drank) + (std::max (dfile, drank) - std::min (dfile, drank));*/
+    /*            }*/
+    /*        else*/
+    /*            {*/
+    /*                int dfile = std::min (std::abs (wk_file - 0), std::abs (wk_file - 7));*/
+    /*                int drank = std::min (std::abs (wk_rank - 0), std::abs (wk_rank - 7));*/
+    /*                distance = SQRT2 * std::min (dfile, drank) + (std::max (dfile, drank) - std::min (dfile, drank));*/
+    /*            }*/
+    /*        evaluation -= mopUpBonus * distance * (evaluation > 0 ? 1 : -1);*/
+    /*    }*/
     evaluation += scoreMultiplier * mobilityBonus * chess::bitboard_helper::count (whiteAttacks);
     evaluation -= scoreMultiplier * mobilityBonus * chess::bitboard_helper::count (blackAttacks);
-
+    /*8/8/8/3K4/8/8/8/6rk b - - 0 1*/
     return evaluation;
 }
 
@@ -279,6 +308,10 @@ Search (chess::engine::Engine &engine)
             searchData.SetScore (children[0].score);
             searchData.Print ();
             localDepth++;
+            if (children[0].score == INT_MAX)
+                {
+                    break;
+                }
         }
 
     return searchData.Bestmove ();
