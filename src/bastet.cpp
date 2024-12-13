@@ -97,6 +97,11 @@ class SearchData
 };
 
 const float SQRT2 = std::sqrt (2);
+const std::array<int, 5> material = { 100, 300, 300, 500, 900 };
+const int endgameMaterialCutoff = 16 * material[0] + 2 * material[1] + 2 * material[2] + 2 * material[3] + 0 * material[4];
+const int mobilityBonus = 10;
+const int mopUpMaterialCutoff = 1 * material[3] - 10;
+const int mopUpBonus = 10;
 int
 Evaluate (chess::engine::Engine &engine)
 {
@@ -105,11 +110,6 @@ Evaluate (chess::engine::Engine &engine)
     std::array<chess::consts::bitboard, 12> pieceBoards = board.get_piece_boards ();
     int scoreMultiplier = whiteToPlay ? 1 : -1;
     int evaluation = 0;
-    std::array<int, 5> material = { 100, 300, 300, 500, 900 };
-    int mobilityBonus = 10;
-    int endgameMaterialCutoff = 16 * material[0] + 4 * material[1] + 4 * material[2] + 2 * material[3];
-    int mopUpMaterialCutoff = 1 * material[3] - 10;
-    int mopUpBonus = 10;
     chess::consts::bitboard whiteAttacks = engine.GetAttacks (true);
     chess::consts::bitboard blackAttacks = engine.GetAttacks (false);
     int whiteMaterialRemaining = 0;
@@ -142,27 +142,27 @@ Evaluate (chess::engine::Engine &engine)
     int materialAdvantage = std::abs (whiteMaterialRemaining - blackMaterialRemaining);
     evaluation += scoreMultiplier * (totalMaterialRemaining < endgameMaterialCutoff ? king_psts[2][whiteKingSquare] : king_psts[0][whiteKingSquare]);
     evaluation -= scoreMultiplier * (totalMaterialRemaining < endgameMaterialCutoff ? king_psts[3][blackKingSquare] : king_psts[1][blackKingSquare]);
-    /*if (materialAdvantage >= mopUpMaterialCutoff)*/
-    /*    {*/
-    /*        int wk_file = whiteKingSquare & 7;*/
-    /*        int wk_rank = whiteKingSquare >> 3;*/
-    /*        int bk_file = blackKingSquare & 7;*/
-    /*        int bk_rank = blackKingSquare >> 3;*/
-    /*        int distance = 0;*/
-    /*        if (whiteToPlay)*/
-    /*            {*/
-    /*                int dfile = std::min (std::abs (bk_file - 0), std::abs (bk_file - 7));*/
-    /*                int drank = std::min (std::abs (bk_rank - 0), std::abs (bk_rank - 7));*/
-    /*                distance = SQRT2 * std::min (dfile, drank) + (std::max (dfile, drank) - std::min (dfile, drank));*/
-    /*            }*/
-    /*        else*/
-    /*            {*/
-    /*                int dfile = std::min (std::abs (wk_file - 0), std::abs (wk_file - 7));*/
-    /*                int drank = std::min (std::abs (wk_rank - 0), std::abs (wk_rank - 7));*/
-    /*                distance = SQRT2 * std::min (dfile, drank) + (std::max (dfile, drank) - std::min (dfile, drank));*/
-    /*            }*/
-    /*        evaluation -= mopUpBonus * distance * (evaluation > 0 ? 1 : -1);*/
-    /*    }*/
+    if (materialAdvantage >= mopUpMaterialCutoff)
+        {
+            int wk_file = whiteKingSquare & 7;
+            int wk_rank = whiteKingSquare >> 3;
+            int bk_file = blackKingSquare & 7;
+            int bk_rank = blackKingSquare >> 3;
+            int distance = 0;
+            if (whiteToPlay)
+                {
+                    int dfile = std::min (std::abs (bk_file - 0), std::abs (bk_file - 7));
+                    int drank = std::min (std::abs (bk_rank - 0), std::abs (bk_rank - 7));
+                    distance = SQRT2 * std::min (dfile, drank) + (std::max (dfile, drank) - std::min (dfile, drank));
+                }
+            else
+                {
+                    int dfile = std::min (std::abs (wk_file - 0), std::abs (wk_file - 7));
+                    int drank = std::min (std::abs (wk_rank - 0), std::abs (wk_rank - 7));
+                    distance = SQRT2 * std::min (dfile, drank) + (std::max (dfile, drank) - std::min (dfile, drank));
+                }
+            evaluation -= mopUpBonus * distance * (evaluation > 0 ? 1 : -1);
+        }
     evaluation += scoreMultiplier * mobilityBonus * chess::bitboard_helper::count (whiteAttacks);
     evaluation -= scoreMultiplier * mobilityBonus * chess::bitboard_helper::count (blackAttacks);
     /*8/8/8/3K4/8/8/8/6rk b - - 0 1*/
