@@ -191,6 +191,7 @@ Quiescence (chess::engine::Engine &engine, int alpha, int beta, SearchData &sear
         }
     std::vector<chess::consts::move> legalCaptures = engine.GetLegalCaptures ();
     int evaluation = alpha;
+    std::vector<chess::consts::move> newPv;
     for (const chess::consts::move &move : legalCaptures)
         {
             engine.MakeMove (move);
@@ -201,11 +202,21 @@ Quiescence (chess::engine::Engine &engine, int alpha, int beta, SearchData &sear
                     break;
                 }
             alpha = std::max (alpha, evaluation);
+            if (evaluation > alpha)
+                {
+                    alpha = evaluation;
+                    newPv.clear ();
+                    newPv.push_back (move);
+                    newPv.insert (newPv.end (), searchData.pv.begin (), searchData.pv.end ());
+                    searchData.pv.clear ();
+                }
+
             if (alpha >= beta)
                 {
                     break;
                 }
         }
+    searchData.pv = newPv;
     return evaluation;
 }
 
