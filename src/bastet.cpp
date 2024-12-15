@@ -19,6 +19,7 @@ class SearchData
     std::chrono::time_point<std::chrono::steady_clock> start;
 
   public:
+    std::vector<chess::consts::move> pv;
     void
     StartClock ()
     {
@@ -83,11 +84,17 @@ class SearchData
     void
     Print ()
     {
-        /*std::cout << "info depth " << depth << " score cp " << score << " nodes " << nodes << " nps " << nodes / (timeElapsed == 0 ? 1 : timeElapsed) * 1000 << std::endl;*/
         std::cout << "info depth " << depth;
         std::cout << " score cp " << score;
         std::cout << " nodes " << nodes;
-        std::cout << " nps " << nodes / (GetTimeElapsed () == 0 ? 1 : GetTimeElapsed ()) * 1000 << std::endl;
+        std::cout << " time " << GetTimeElapsed ();
+        std::cout << " nps " << nodes / (GetTimeElapsed () == 0 ? 1 : GetTimeElapsed ()) * 1000;
+        std::cout << " pv";
+        for (const chess::consts::move &move : pv)
+            {
+                std::cout << " " << chess::moves::move2string (move);
+            }
+        std::cout << std::endl;
     }
     std::string
     Bestmove ()
@@ -163,9 +170,9 @@ Evaluate (chess::engine::Engine &engine)
                 }
             evaluation -= mopUpBonus * distance * (evaluation > 0 ? 1 : -1);
         }
+
     evaluation += scoreMultiplier * mobilityBonus * chess::bitboard_helper::count (whiteAttacks);
     evaluation -= scoreMultiplier * mobilityBonus * chess::bitboard_helper::count (blackAttacks);
-    /*8/8/8/3K4/8/8/8/6rk b - - 0 1*/
     return evaluation;
 }
 
@@ -189,10 +196,8 @@ Quiescence (chess::engine::Engine &engine, int alpha, int beta, SearchData &sear
             engine.MakeMove (move);
             evaluation = std::max (evaluation, -Quiescence (engine, -beta, -alpha, searchData));
             engine.UndoMove ();
-            /*if (engine.GetTimer ().GetTimeElapsed () > searchData.GetAlottedTime ())*/
             if (searchData.GetTimeElapsed () > searchData.GetAlottedTime ())
                 {
-                    /*return searchData.Bestmove ();*/
                     break;
                 }
             alpha = std::max (alpha, evaluation);
@@ -209,8 +214,6 @@ NegaMax (chess::engine::Engine &engine, int depth, int alpha, int beta, SearchDa
 {
     if (depth == 0)
         {
-            /*searchData.AddNodes ();*/
-            /*return Evaluate (engine);*/
             return Quiescence (engine, alpha, beta, searchData);
         }
     std::vector<chess::consts::move> legalMoves = engine.GetLegalMoves ();
@@ -229,24 +232,32 @@ NegaMax (chess::engine::Engine &engine, int depth, int alpha, int beta, SearchDa
         {
             return 0;
         }
+    std::vector<chess::consts::move> newPv;
     int evaluation = -INT_MAX;
     for (const chess::consts::move &move : legalMoves)
         {
             engine.MakeMove (move);
             evaluation = std::max (evaluation, -NegaMax (engine, depth - 1, -beta, -alpha, searchData));
             engine.UndoMove ();
-            /*if (engine.GetTimer ().GetTimeElapsed () > searchData.GetAlottedTime ())*/
             if (searchData.GetTimeElapsed () > searchData.GetAlottedTime ())
                 {
-                    /*return searchData.Bestmove ();*/
                     break;
                 }
-            alpha = std::max (alpha, evaluation);
+            /*alpha = std::max (alpha, evaluation);*/
+            if (evaluation > alpha)
+                {
+                    alpha = evaluation;
+                    newPv.clear ();
+                    newPv.push_back (move);
+                    newPv.insert (newPv.end (), searchData.pv.begin (), searchData.pv.end ());
+                    searchData.pv.clear ();
+                }
             if (alpha >= beta)
                 {
                     break;
                 }
         }
+    searchData.pv = newPv;
     return evaluation;
 }
 
@@ -254,6 +265,7 @@ struct child
 {
     chess::consts::move move;
     int score;
+    std::vector<chess::consts::move> pv;
 };
 
 std::string
@@ -274,7 +286,6 @@ Search (chess::engine::Engine &engine)
             children.push_back (child);
         }
     searchData.SetBestmove (children[0].move);
-    /*for (int localDepth = 1; localDepth <= maxDepth; localDepth++)*/
     int localDepth = 1;
     int allottedTime = 0;
     if (engine.GetBoard ().white_to_play ())
@@ -295,17 +306,20 @@ Search (chess::engine::Engine &engine)
                     engine.MakeMove (child.move);
                     child.score = -NegaMax (engine, localDepth, -INT_MAX, INT_MAX, searchData);
                     engine.UndoMove ();
-                    /*if (engine.GetTimer ().GetTimeElapsed () > searchData.GetAlottedTime ())*/
+                    child.pv.clear ();
+                    child.pv.push_back (child.move);
+                    child.pv.insert (child.pv.end (), searchData.pv.begin (), searchData.pv.end ());
+                    searchData.pv.clear ();
                     if (searchData.GetTimeElapsed () > searchData.GetAlottedTime ())
                         {
                             return searchData.Bestmove ();
-                            /*break;*/
                         }
                 }
             std::sort (children.begin (), children.end (), [] (child A, child B) { return A.score > B.score; });
 
             searchData.SetBestmove (children[0].move);
             searchData.SetScore (children[0].score);
+            searchData.pv = children[0].pv;
             searchData.Print ();
             localDepth++;
             if (children[0].score == INT_MAX)
