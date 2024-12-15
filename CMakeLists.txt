@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-project(bastet VERSION 1.8.0)
+project(bastet VERSION 1.8.1)
 
 set(SUFFIX
     ""
@@ -13,6 +13,9 @@ else()
 endif()
 
 add_executable(${TARGET_NAME} src/bastet.cpp)
+set_target_properties(${TARGET_NAME} PROPERTIES CXX_STANDARD 20
+                                                CXX_STANDARD_REQUIRED ON)
+
 target_include_directories(${TARGET_NAME} PUBLIC ${CHESS_ROOT}/include)
 find_library(
   CHESS_LIB
