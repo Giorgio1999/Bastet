@@ -198,18 +198,16 @@ Quiescence (chess::engine::Engine &engine, int alpha, int beta, SearchData &sear
             engine.MakeMove (move);
             evaluation = std::max (evaluation, -Quiescence (engine, -beta, -alpha, searchData));
             engine.UndoMove ();
-            if (searchData.GetTimeElapsed () > searchData.GetAlottedTime ())
-                {
-                    break;
-                }
-            /*alpha = std::max (alpha, evaluation);*/
+            /*if (searchData.GetTimeElapsed () > searchData.GetAlottedTime ())*/
+            /*    {*/
+            /*        break;*/
+            /*    }*/
             if (evaluation > alpha)
                 {
                     alpha = evaluation;
                     newPv.clear ();
                     newPv.push_back (move);
                     newPv.insert (newPv.end (), searchData.pv.begin (), searchData.pv.end ());
-                    /*searchData.pv.clear ();*/
                 }
 
             if (alpha >= beta)
@@ -256,7 +254,6 @@ NegaMax (chess::engine::Engine &engine, int depth, int alpha, int beta, SearchDa
                 {
                     break;
                 }
-            /*alpha = std::max (alpha, evaluation);*/
             if (evaluation > alpha)
                 {
                     alpha = evaluation;
