@@ -194,6 +194,7 @@ Quiescence (chess::engine::Engine &engine, int alpha, int beta, SearchData &sear
     std::vector<chess::consts::move> newPv;
     for (const chess::consts::move &move : legalCaptures)
         {
+            searchData.pv.clear ();
             engine.MakeMove (move);
             evaluation = std::max (evaluation, -Quiescence (engine, -beta, -alpha, searchData));
             engine.UndoMove ();
@@ -201,14 +202,14 @@ Quiescence (chess::engine::Engine &engine, int alpha, int beta, SearchData &sear
                 {
                     break;
                 }
-            alpha = std::max (alpha, evaluation);
+            /*alpha = std::max (alpha, evaluation);*/
             if (evaluation > alpha)
                 {
                     alpha = evaluation;
                     newPv.clear ();
                     newPv.push_back (move);
                     newPv.insert (newPv.end (), searchData.pv.begin (), searchData.pv.end ());
-                    searchData.pv.clear ();
+                    /*searchData.pv.clear ();*/
                 }
 
             if (alpha >= beta)
@@ -247,6 +248,7 @@ NegaMax (chess::engine::Engine &engine, int depth, int alpha, int beta, SearchDa
     int evaluation = -INT_MAX;
     for (const chess::consts::move &move : legalMoves)
         {
+            searchData.pv.clear ();
             engine.MakeMove (move);
             evaluation = std::max (evaluation, -NegaMax (engine, depth - 1, -beta, -alpha, searchData));
             engine.UndoMove ();
@@ -261,7 +263,6 @@ NegaMax (chess::engine::Engine &engine, int depth, int alpha, int beta, SearchDa
                     newPv.clear ();
                     newPv.push_back (move);
                     newPv.insert (newPv.end (), searchData.pv.begin (), searchData.pv.end ());
-                    searchData.pv.clear ();
                 }
             if (alpha >= beta)
                 {
@@ -342,6 +343,11 @@ Search (chess::engine::Engine &engine)
     return searchData.Bestmove ();
 }
 
+void
+Update (chess::engine::Engine &engine)
+{
+}
+
 int
 main ()
 {
@@ -350,6 +356,7 @@ main ()
     engine.SetVersion_Minor (0);
     engine.SetVersion_Patch (0);
     engine.SetSearch (Search);
+    engine.SetUpdate (Update);
     chess::engine::Handler handler (engine, std::cin, std::cout);
 }
 
