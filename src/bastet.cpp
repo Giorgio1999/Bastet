@@ -145,6 +145,16 @@ Evaluate (chess::engine::Engine &engine)
         }
     int whiteKingSquare = chess::bitboard_helper::pop_lsb (pieceBoards[5]);
     int blackKingSquare = chess::bitboard_helper::pop_lsb (pieceBoards[11]);
+    if (whiteAttacks == 0)
+        {
+            bool isCheck = (blackAttacks & (chess::consts::bitboard)1 << whiteKingSquare) > 0;
+            return isCheck ? -scoreMultiplier * INT_MAX : 0;
+        }
+    if (blackAttacks == 0)
+        {
+            bool isCheck = (whiteAttacks & (chess::consts::bitboard)1 << blackKingSquare) > 0;
+            return isCheck ? scoreMultiplier * INT_MAX : 0;
+        }
     int totalMaterialRemaining = whiteMaterialRemaining + blackMaterialRemaining;
     int materialAdvantage = std::abs (whiteMaterialRemaining - blackMaterialRemaining);
     evaluation += scoreMultiplier * (totalMaterialRemaining < endgameMaterialCutoff ? king_psts[2][whiteKingSquare] : king_psts[0][whiteKingSquare]);
@@ -198,10 +208,6 @@ Quiescence (chess::engine::Engine &engine, int alpha, int beta, SearchData &sear
             engine.MakeMove (move);
             evaluation = std::max (evaluation, -Quiescence (engine, -beta, -alpha, searchData));
             engine.UndoMove ();
-            /*if (searchData.GetTimeElapsed () > searchData.GetAlottedTime ())*/
-            /*    {*/
-            /*        break;*/
-            /*    }*/
             if (evaluation > alpha)
                 {
                     alpha = evaluation;
@@ -233,10 +239,10 @@ NegaMax (chess::engine::Engine &engine, int depth, int alpha, int beta, SearchDa
                 {
                     return 0;
                 }
-            if (engine.IsMate ())
-                {
-                    return -INT_MAX;
-                }
+            /*if (engine.IsMate ())*/
+            /*    {*/
+            /*        return -INT_MAX;*/
+            /*    }*/
         }
     if (engine.IsRepetition ())
         {
@@ -313,7 +319,7 @@ Search (chess::engine::Engine &engine)
             for (child &child : children)
                 {
                     engine.MakeMove (child.move);
-                    child.score = -NegaMax (engine, localDepth, -INT_MAX, INT_MAX, searchData);
+                    child.score = -NegaMax (engine, localDepth - 1, -INT_MAX, INT_MAX, searchData);
                     engine.UndoMove ();
                     child.pv.clear ();
                     child.pv.push_back (child.move);
@@ -322,6 +328,8 @@ Search (chess::engine::Engine &engine)
                     if (searchData.GetTimeElapsed () > searchData.GetAlottedTime ())
                         {
                             return searchData.Bestmove ();
+                            /*localDepth = maxDepth + 1;*/
+                            /*break;*/
                         }
                 }
             std::sort (children.begin (), children.end (), [] (child A, child B) { return A.score > B.score; });
