@@ -6,11 +6,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1734477896,
-        "narHash": "sha256-ePBZNCscSg1zGn3+xUP/UJ0hZhncBT53wY15M3ca8Hc=",
+        "lastModified": 1734540148,
+        "narHash": "sha256-4MePw8IsE2GmUtHx/M4ikiXZjRDzHRmKZmQxjknje9A=",
         "owner": "Giorgio1999",
         "repo": "chess",
-        "rev": "21bef14e3e7805606df67200554888179d575724",
+        "rev": "972798d33f94823f77643d48d90bbaf9ff346dbf",
         "type": "github"
       },
       "original": {

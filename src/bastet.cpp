@@ -183,6 +183,7 @@ Evaluate (chess::engine::Engine &engine)
 
     evaluation += scoreMultiplier * mobilityBonus * chess::bitboard_helper::count (whiteAttacks);
     evaluation -= scoreMultiplier * mobilityBonus * chess::bitboard_helper::count (blackAttacks);
+
     return evaluation;
 }
 
@@ -232,6 +233,7 @@ NegaMax (chess::engine::Engine &engine, int depth, int alpha, int beta, SearchDa
         {
             return Quiescence (engine, alpha, beta, searchData);
         }
+    int evaluation = -INT_MAX;
     std::vector<chess::consts::move> legalMoves = engine.GetLegalMoves ();
     if (legalMoves.size () == 0)
         {
@@ -239,17 +241,12 @@ NegaMax (chess::engine::Engine &engine, int depth, int alpha, int beta, SearchDa
                 {
                     return 0;
                 }
-            /*if (engine.IsMate ())*/
-            /*    {*/
-            /*        return -INT_MAX;*/
-            /*    }*/
         }
-    if (engine.IsRepetition ())
+    if (engine.GetNumberOfRepetitions () == 1)
         {
             return 0;
         }
     std::vector<chess::consts::move> newPv;
-    int evaluation = -INT_MAX;
     for (const chess::consts::move &move : legalMoves)
         {
             searchData.pv.clear ();
@@ -328,8 +325,6 @@ Search (chess::engine::Engine &engine)
                     if (searchData.GetTimeElapsed () > searchData.GetAlottedTime ())
                         {
                             return searchData.Bestmove ();
-                            /*localDepth = maxDepth + 1;*/
-                            /*break;*/
                         }
                 }
             std::sort (children.begin (), children.end (), [] (child A, child B) { return A.score > B.score; });
